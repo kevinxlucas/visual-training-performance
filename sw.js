@@ -1,4 +1,4 @@
-const CACHE_NAME = 'visual-training-performance-v2';
+const CACHE_NAME = 'visual-training-performance-v3';
 const SCOPE_PATH = new URL(self.registration.scope).pathname.replace(/\/$/, '');
 const asset = (path) => `${SCOPE_PATH}${path}` || path;
 const STATIC_ASSETS = [
