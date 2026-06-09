@@ -1,0 +1,16 @@
+{
+  "name": "visual-training-performance",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "prepare-vendor": "node scripts/copy-vendor.js",
+    "build": "npm run prepare-vendor && node --check api/results.js && node --check game.js && node --check sw.js && node --check scripts/local-server.js && node --check scripts/copy-static-dist.js && vite build && node scripts/copy-static-dist.js",
+    "start": "npm run prepare-vendor && vite --host 127.0.0.1",
+    "serve:local": "npm run prepare-vendor && node scripts/local-server.js"
+  },
+  "dependencies": {
+    "p5": "^2.3.0",
+    "vite": "latest"
+  }
+}
