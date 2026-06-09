@@ -32,6 +32,7 @@
     this.type = type || 'sine';
     this.frequency = 440;
     this.gainValue = 0;
+    this._ampRampEndTime = 0;
     this.osc = null;
     this.gain = null;
     this.started = false;
@@ -70,15 +71,27 @@
   };
 
   window.p5.Oscillator.prototype.amp = function amp(value, rampTime) {
-    this.gainValue = Number(value);
+    const nextValue = Number(value);
+    const previousValue = Number(this.gainValue || 0);
+    const previousRampEndTime = Number(this._ampRampEndTime || 0);
+    this.gainValue = nextValue;
     this._ensureStarted();
     if (this.gain) {
       const ctx = getContext();
       const now = ctx.currentTime;
-      const end = now + Number(rampTime || 0);
-      this.gain.gain.cancelScheduledValues(now);
-      this.gain.gain.setValueAtTime(this.gain.gain.value, now);
-      this.gain.gain.linearRampToValueAtTime(this.gainValue, end);
+      const duration = Number(rampTime || 0);
+      // O código original do jogo faz chamadas em sequência, por exemplo:
+      //   amp(0.2, 0.05); amp(0, 0.2)
+      // No WebAudio cru, se a segunda chamada cancelar tudo a partir de "agora",
+      // o ataque é anulado e o som fica inaudível. Preservamos a intenção p5.sound:
+      // primeiro subir até ao volume pedido e só depois fazer o fade-out.
+      const isImmediateReleaseAfterAttack = nextValue === 0 && previousValue > 0 && previousRampEndTime > now;
+      const start = isImmediateReleaseAfterAttack ? previousRampEndTime : now;
+      const end = start + duration;
+      this.gain.gain.cancelScheduledValues(start);
+      this.gain.gain.setValueAtTime(isImmediateReleaseAfterAttack ? previousValue : this.gain.gain.value, start);
+      this.gain.gain.linearRampToValueAtTime(nextValue, end);
+      this._ampRampEndTime = end;
     }
   };
 }());
