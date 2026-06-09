@@ -10,5 +10,6 @@ for (const file of files) {
 }
 
 fs.cpSync(path.join(root, 'public', 'vendor'), path.join(dist, 'vendor'), { recursive: true });
+fs.writeFileSync(path.join(dist, '.nojekyll'), '');
 
 console.log('Static runtime files copied to dist.');
