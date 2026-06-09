@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Visual Training Performance</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon-CNPtuiVr.svg" />
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon-6S2nWafo.svg" />
+  <link rel="manifest" href="./assets/manifest-1M2tCxk6.webmanifest" />
+  <link rel="stylesheet" crossorigin href="./assets/index-DVSV00GO.css">
+</head>
+<body>
+  <main id="app-shell" aria-label="Aplicação de treino visual">
+    <section id="top-panel" class="panel compact" aria-live="polite">
+      <div>
+        <strong>Visual Training Performance</strong>
+        <span id="syncStatus">A preparar base de dados local…</span>
+      </div>
+      <div id="quickStats">Sessão — | Tentativa —</div>
+    </section>
+
+    <section id="resultsPanel" class="panel results hidden" aria-live="polite">
+      <div class="result-grid">
+        <article>
+          <h2>Resultado da tentativa atual</h2>
+          <div id="currentResult">Ainda sem resultados guardados.</div>
+        </article>
+        <article>
+          <h2>Resumo</h2>
+          <div id="summaryStats">A carregar histórico…</div>
+        </article>
+        <article>
+          <h2>Últimas tentativas</h2>
+          <ol id="recentAttempts"></ol>
+        </article>
+        <article>
+          <h2>Evolução</h2>
+          <canvas id="evolutionChart" width="620" height="260" aria-label="Gráfico de evolução do nível e avaliação pessoal"></canvas>
+        </article>
+      </div>
+    </section>
+
+    <dialog id="ratingDialog" aria-labelledby="ratingTitle">
+      <form method="dialog" id="ratingForm">
+        <h2 id="ratingTitle">Avaliação da performance visual</h2>
+        <p>De 0 a 10, como avalias a tua performance visual neste dia?</p>
+        <label>
+          Avaliação obrigatória (0–10)
+          <input id="performanceRating" type="number" min="0" max="10" step="1" required autocomplete="off" />
+        </label>
+        <label>
+          Observações opcionais
+          <textarea id="performanceNotes" rows="3" placeholder="Notas sobre cansaço, atenção, luz, óculos, etc."></textarea>
+        </label>
+        <p id="ratingError" class="error" role="alert"></p>
+        <button id="saveRatingButton" type="submit">Guardar resultado</button>
+      </form>
+    </dialog>
+  </main>
+
+  <script src="vendor/p5.min.js"></script>
+  <script src="sound-compat.js"></script>
+  <script src="config.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
