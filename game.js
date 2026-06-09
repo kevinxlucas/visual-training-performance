@@ -449,12 +449,15 @@ function drawHearts() {
 }
 
 function drawHeart(x, y, size) {
+  // p5 v2 pode lançar erro com beginShape()+bezierVertex() em alguns browsers.
+  // Mantém a mesma indicação de vidas, mas desenha o coração como texto estável.
+  push();
+  noStroke();
   fill('#e74c3c');
-  beginShape();
-  vertex(x, y);
-  bezierVertex(x - size / 2, y - size / 2, x - size, y + size / 3, x, y + size);
-  bezierVertex(x + size, y + size / 3, x + size / 2, y - size / 2, x, y);
-  endShape(CLOSE);
+  textAlign(CENTER, CENTER);
+  textSize(size * 1.35);
+  text('♥', x, y + size * 0.15);
+  pop();
 }
 
 function showResults() {
