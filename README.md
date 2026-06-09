@@ -5,7 +5,7 @@ Aplicação p5.js para treino visual com persistência local, fila offline e sin
 ## O que foi alterado
 
 - Estado inicial: o jogo abre com formas geométricas visíveis e paradas. A tecla `M` continua a alternar o movimento sem alterar a lógica original de movimento.
-- Resultados: no fim de cada tentativa é obrigatória uma avaliação pessoal de 0 a 10 e podem ser adicionadas observações.
+- Resultados: no fim de cada tentativa é obrigatória uma avaliação pessoal de 0 a 10 para análise local; esta autoavaliação não é enviada para Google Sheets. Podem ser adicionadas observações.
 - Persistência local: cada tentativa fica guardada em IndexedDB com `attemptId` único, mesmo sem internet.
 - Sincronização: a app tenta enviar resultados para a API configurada; se falhar, mantém a fila local e sincroniza quando voltar a ligação.
 - Google Sheets: em GitHub Pages a opção segura é Google Apps Script publicado como Web App. Não há credenciais no frontend.
@@ -79,5 +79,5 @@ O output estático fica em `dist/`.
 
 - Os dados ficam persistentes localmente via IndexedDB.
 - A app funciona sem internet e guarda resultados pendentes localmente.
-- Quando `config.js` contém o URL do Google Apps Script, os dados são enviados para Google Sheets sem credenciais no frontend.
+- Quando `config.js` contém o URL do Google Apps Script, os dados da tentativa são enviados para Google Sheets sem credenciais no frontend; a autoavaliação fica apenas localmente.
 - O gráfico usa os dados guardados localmente e os dados sincronizados recebidos da Google Sheet quando a API está configurada.

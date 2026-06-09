@@ -1,7 +1,8 @@
 // Minimal p5.sound-compatible oscillator wrapper for this game.
-// It preserves the existing p5.Oscillator calls without exposing credentials or adding a heavy addon.
+// Preserves the original p5.Oscillator API used by the game without adding credentials or remote code.
 (function () {
   let audioContext = null;
+  const startedOscillators = new Set();
 
   function getContext() {
     if (!audioContext) {
@@ -11,9 +12,18 @@
     return audioContext;
   }
 
-  window.userStartAudio = window.userStartAudio || function () {
+  function resumeContext() {
     const ctx = getContext();
-    return ctx && ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+    if (!ctx) return Promise.resolve();
+    return ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+  }
+
+  window.userStartAudio = function () {
+    return resumeContext().then(function () {
+      startedOscillators.forEach(function (oscillator) {
+        oscillator._ensureStarted();
+      });
+    });
   };
 
   if (!window.p5) return;
@@ -24,37 +34,50 @@
     this.gainValue = 0;
     this.osc = null;
     this.gain = null;
+    this.started = false;
   };
 
-  window.p5.Oscillator.prototype.start = function start() {
+  window.p5.Oscillator.prototype._ensureStarted = function _ensureStarted() {
     const ctx = getContext();
     if (!ctx || this.osc) return;
     this.osc = ctx.createOscillator();
     this.gain = ctx.createGain();
     this.osc.type = this.type;
-    this.osc.frequency.value = this.frequency;
-    this.gain.gain.value = this.gainValue;
+    this.osc.frequency.setValueAtTime(this.frequency, ctx.currentTime);
+    this.gain.gain.setValueAtTime(this.gainValue, ctx.currentTime);
     this.osc.connect(this.gain);
     this.gain.connect(ctx.destination);
     this.osc.start();
   };
 
+  window.p5.Oscillator.prototype.start = function start() {
+    this.started = true;
+    startedOscillators.add(this);
+    this._ensureStarted();
+  };
+
   window.p5.Oscillator.prototype.freq = function freq(value, rampTime) {
     this.frequency = Number(value);
+    this._ensureStarted();
     if (this.osc) {
       const ctx = getContext();
-      const end = ctx.currentTime + Number(rampTime || 0);
-      this.osc.frequency.cancelScheduledValues(ctx.currentTime);
+      const now = ctx.currentTime;
+      const end = now + Number(rampTime || 0);
+      this.osc.frequency.cancelScheduledValues(now);
+      this.osc.frequency.setValueAtTime(this.osc.frequency.value, now);
       this.osc.frequency.linearRampToValueAtTime(this.frequency, end);
     }
   };
 
   window.p5.Oscillator.prototype.amp = function amp(value, rampTime) {
     this.gainValue = Number(value);
+    this._ensureStarted();
     if (this.gain) {
       const ctx = getContext();
-      const end = ctx.currentTime + Number(rampTime || 0);
-      this.gain.gain.cancelScheduledValues(ctx.currentTime);
+      const now = ctx.currentTime;
+      const end = now + Number(rampTime || 0);
+      this.gain.gain.cancelScheduledValues(now);
+      this.gain.gain.setValueAtTime(this.gain.gain.value, now);
       this.gain.gain.linearRampToValueAtTime(this.gainValue, end);
     }
   };

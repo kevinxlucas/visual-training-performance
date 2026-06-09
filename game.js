@@ -609,7 +609,8 @@ async function syncPending() {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': CONFIGURED_API_URL ? 'text/plain;charset=utf-8' : 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(record)
+        // A autoavaliação é mantida localmente para o painel/gráfico, mas não é enviada para Google Sheets.
+        body: JSON.stringify(recordForGoogleSheets(record))
       });
       if (!response.ok) throw new Error('Falha na sincronização');
       record.synced = true;
@@ -727,6 +728,11 @@ function currentSettings() {
 
 function summarizeSettings(settings) {
   return `Formas: ${settings.showShapes ? 'sim' : 'não'}; Movimento: ${settings.movementEnabled ? 'sim' : 'não'}; Centro: ${settings.moveToCenter ? 'sim' : 'não'}; Tempo: ${settings.timeLimited ? 'com limite' : 'sem limite'}; Estilo: ${settings.currentStyle}; Divisões: ${settings.divisionLevel}`;
+}
+
+function recordForGoogleSheets(record) {
+  const { personalVisualPerformanceRating, ...sheetRecord } = record;
+  return sheetRecord;
 }
 
 function renderResultsPanel() {

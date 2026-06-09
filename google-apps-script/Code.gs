@@ -32,7 +32,6 @@ const SHEET_HEADERS = [
   'worstResponseTimeMs',
   'difficultySpeed',
   'settingsJson',
-  'personalVisualPerformanceRating',
   'observations',
   'configSummary',
   'totalTrials',
@@ -80,8 +79,18 @@ function getSheet_() {
 }
 
 function ensureHeaderRow_(sheet) {
-  const current = sheet.getRange(1, 1, 1, SHEET_HEADERS.length).getValues()[0];
-  if (current[0] !== 'attemptId') {
+  const width = Math.max(SHEET_HEADERS.length, sheet.getLastColumn() || SHEET_HEADERS.length);
+  let current = sheet.getRange(1, 1, 1, width).getValues()[0];
+  const ratingColumn = current.indexOf('personalVisualPerformanceRating');
+  if (ratingColumn >= 0) {
+    // Pedido atual: a autoavaliação final não deve ficar registada na Google Sheet.
+    // Se a folha tiver a coluna antiga, removemo-la para alinhar cabeçalhos e dados já existentes.
+    sheet.deleteColumn(ratingColumn + 1);
+    current = sheet.getRange(1, 1, 1, Math.max(SHEET_HEADERS.length, sheet.getLastColumn() || SHEET_HEADERS.length)).getValues()[0];
+  }
+  const activeHeaders = current.filter(function(value) { return value !== ''; });
+  if (current[0] !== 'attemptId' || activeHeaders.join('|') !== SHEET_HEADERS.join('|')) {
+    sheet.getRange(1, 1, 1, Math.max(SHEET_HEADERS.length, sheet.getLastColumn() || SHEET_HEADERS.length)).clearContent();
     sheet.getRange(1, 1, 1, SHEET_HEADERS.length).setValues([SHEET_HEADERS]);
     sheet.setFrozenRows(1);
   }
@@ -102,10 +111,6 @@ function parsePayload_(e) {
 function normalizeRecord_(input) {
   if (!input || typeof input !== 'object') throw new Error('Registo inválido.');
   if (!input.attemptId || typeof input.attemptId !== 'string') throw new Error('attemptId obrigatório.');
-  const rating = Number(input.personalVisualPerformanceRating);
-  if (!Number.isInteger(rating) || rating < 0 || rating > 10) {
-    throw new Error('A avaliação pessoal deve ser um inteiro entre 0 e 10.');
-  }
   return {
     attemptId: input.attemptId,
     dateTime: input.dateTime || new Date().toISOString(),
@@ -121,7 +126,6 @@ function normalizeRecord_(input) {
     worstResponseTimeMs: input.worstResponseTimeMs == null ? '' : Number(input.worstResponseTimeMs),
     difficultySpeed: input.difficultySpeed == null ? '' : String(input.difficultySpeed),
     settingsJson: JSON.stringify(input.settings || {}),
-    personalVisualPerformanceRating: rating,
     observations: String(input.observations || '').slice(0, 1000),
     configSummary: String(input.configSummary || '').slice(0, 1000),
     totalTrials: Number(input.totalTrials || 0),
@@ -147,7 +151,6 @@ function rowFromRecord_(record) {
     record.worstResponseTimeMs,
     record.difficultySpeed,
     record.settingsJson,
-    record.personalVisualPerformanceRating,
     record.observations,
     record.configSummary,
     record.totalTrials,
@@ -161,7 +164,7 @@ function recordFromRow_(row) {
   SHEET_HEADERS.forEach(function(header, index) {
     obj[header] = row[index] == null ? '' : row[index];
   });
-  ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'personalVisualPerformanceRating', 'totalTrials', 'percentCorrect'].forEach(function(key) {
+  ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect'].forEach(function(key) {
     if (obj[key] !== '') obj[key] = Number(obj[key]);
   });
   try {

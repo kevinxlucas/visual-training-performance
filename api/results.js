@@ -14,7 +14,6 @@ const SHEET_HEADERS = [
   'worstResponseTimeMs',
   'difficultySpeed',
   'settingsJson',
-  'personalVisualPerformanceRating',
   'observations',
   'configSummary',
   'totalTrials',
@@ -97,7 +96,7 @@ async function sheetsFetch(path, options = {}) {
 }
 
 async function ensureHeaderRow() {
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A1:U1`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A1:T1`);
   const current = await sheetsFetch(`/values/${range}`);
   const values = current.values || [];
   if (!values.length || values[0][0] !== 'attemptId') {
@@ -113,7 +112,7 @@ function recordFromRow(row) {
   SHEET_HEADERS.forEach((header, index) => {
     obj[header] = row[index] ?? '';
   });
-  for (const key of ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'personalVisualPerformanceRating', 'totalTrials', 'percentCorrect']) {
+  for (const key of ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect']) {
     if (obj[key] !== '') obj[key] = Number(obj[key]);
   }
   try {
@@ -127,7 +126,7 @@ function recordFromRow(row) {
 
 async function getRecords() {
   await ensureHeaderRow();
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A2:U`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A2:T`);
   const data = await sheetsFetch(`/values/${range}?majorDimension=ROWS`);
   return (data.values || []).filter((row) => row[0]).map(recordFromRow);
 }
@@ -135,8 +134,6 @@ async function getRecords() {
 function normalizeRecord(input) {
   if (!input || typeof input !== 'object') throw Object.assign(new Error('Registo inválido.'), { statusCode: 400 });
   if (!input.attemptId || typeof input.attemptId !== 'string') throw Object.assign(new Error('attemptId obrigatório.'), { statusCode: 400 });
-  const rating = Number(input.personalVisualPerformanceRating);
-  if (!Number.isInteger(rating) || rating < 0 || rating > 10) throw Object.assign(new Error('A avaliação pessoal deve ser um inteiro entre 0 e 10.'), { statusCode: 400 });
   return {
     attemptId: input.attemptId,
     dateTime: input.dateTime || new Date().toISOString(),
@@ -152,7 +149,6 @@ function normalizeRecord(input) {
     worstResponseTimeMs: input.worstResponseTimeMs == null ? '' : Number(input.worstResponseTimeMs),
     difficultySpeed: input.difficultySpeed == null ? '' : String(input.difficultySpeed),
     settingsJson: JSON.stringify(input.settings || {}),
-    personalVisualPerformanceRating: rating,
     observations: String(input.observations || '').slice(0, 1000),
     configSummary: String(input.configSummary || '').slice(0, 1000),
     totalTrials: Number(input.totalTrials || 0),
@@ -178,7 +174,6 @@ function rowFromRecord(record) {
     record.worstResponseTimeMs,
     record.difficultySpeed,
     record.settingsJson,
-    record.personalVisualPerformanceRating,
     record.observations,
     record.configSummary,
     record.totalTrials,
@@ -194,7 +189,7 @@ async function appendRecord(input) {
   if (existing.some((row) => row.attemptId === record.attemptId)) {
     return { status: 'duplicate', record: { ...record, synced: true } };
   }
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A:U`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A:T`);
   await sheetsFetch(`/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
     method: 'POST',
     body: JSON.stringify({ values: [rowFromRecord(record)] })
