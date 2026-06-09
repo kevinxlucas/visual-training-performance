@@ -14,6 +14,7 @@ const SHEET_HEADERS = [
   'worstResponseTimeMs',
   'difficultySpeed',
   'settingsJson',
+  'personalVisualPerformanceRating',
   'observations',
   'configSummary',
   'totalTrials',
@@ -96,10 +97,11 @@ async function sheetsFetch(path, options = {}) {
 }
 
 async function ensureHeaderRow() {
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A1:T1`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A1:U1`);
   const current = await sheetsFetch(`/values/${range}`);
   const values = current.values || [];
-  if (!values.length || values[0][0] !== 'attemptId') {
+  const activeHeaders = (values[0] || []).filter(Boolean);
+  if (!values.length || values[0][0] !== 'attemptId' || activeHeaders.join('|') !== SHEET_HEADERS.join('|')) {
     await sheetsFetch(`/values/${range}?valueInputOption=RAW`, {
       method: 'PUT',
       body: JSON.stringify({ values: [SHEET_HEADERS] })
@@ -112,7 +114,7 @@ function recordFromRow(row) {
   SHEET_HEADERS.forEach((header, index) => {
     obj[header] = row[index] ?? '';
   });
-  for (const key of ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect']) {
+  for (const key of ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating']) {
     if (obj[key] !== '') obj[key] = Number(obj[key]);
   }
   try {
@@ -126,7 +128,7 @@ function recordFromRow(row) {
 
 async function getRecords() {
   await ensureHeaderRow();
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A2:T`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A2:U`);
   const data = await sheetsFetch(`/values/${range}?majorDimension=ROWS`);
   return (data.values || []).filter((row) => row[0]).map(recordFromRow);
 }
@@ -149,6 +151,7 @@ function normalizeRecord(input) {
     worstResponseTimeMs: input.worstResponseTimeMs == null ? '' : Number(input.worstResponseTimeMs),
     difficultySpeed: input.difficultySpeed == null ? '' : String(input.difficultySpeed),
     settingsJson: JSON.stringify(input.settings || {}),
+    personalVisualPerformanceRating: input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating),
     observations: String(input.observations || '').slice(0, 1000),
     configSummary: String(input.configSummary || '').slice(0, 1000),
     totalTrials: Number(input.totalTrials || 0),
@@ -174,6 +177,7 @@ function rowFromRecord(record) {
     record.worstResponseTimeMs,
     record.difficultySpeed,
     record.settingsJson,
+    record.personalVisualPerformanceRating,
     record.observations,
     record.configSummary,
     record.totalTrials,
@@ -189,7 +193,7 @@ async function appendRecord(input) {
   if (existing.some((row) => row.attemptId === record.attemptId)) {
     return { status: 'duplicate', record: { ...record, synced: true } };
   }
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A:T`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A:U`);
   await sheetsFetch(`/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
     method: 'POST',
     body: JSON.stringify({ values: [rowFromRecord(record)] })

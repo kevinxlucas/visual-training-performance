@@ -609,7 +609,7 @@ async function syncPending() {
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': CONFIGURED_API_URL ? 'text/plain;charset=utf-8' : 'application/json', Accept: 'application/json' },
-        // A autoavaliação é mantida localmente para o painel/gráfico, mas não é enviada para Google Sheets.
+        // A autoavaliação faz parte do registo principal e é enviada para Google Sheets.
         body: JSON.stringify(recordForGoogleSheets(record))
       });
       if (!response.ok) throw new Error('Falha na sincronização');
@@ -731,8 +731,7 @@ function summarizeSettings(settings) {
 }
 
 function recordForGoogleSheets(record) {
-  const { personalVisualPerformanceRating, ...sheetRecord } = record;
-  return sheetRecord;
+  return record;
 }
 
 function renderResultsPanel() {
