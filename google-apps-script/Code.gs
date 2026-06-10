@@ -4,7 +4,9 @@
  * Como usar:
  * 1) Criar um projeto em https://script.google.com/.
  * 2) Colar este ficheiro em Code.gs.
- * 3) Definir SHEET_ID com o ID da folha "Visual Training Performance Database".
+ * 3) Project Settings > Script properties > Add script property:
+ *    - Property: SHEET_ID
+ *    - Value: ID da Google Sheet de resultados
  * 4) Deploy > New deployment > Web app:
  *    - Execute as: Me
  *    - Who has access: Anyone
@@ -13,7 +15,7 @@
  * Não há client secret, refresh token ou password no frontend.
  */
 
-const SHEET_ID = 'PASTE_GOOGLE_SHEET_ID_HERE';
+const SHEET_ID_PROPERTY = 'SHEET_ID';
 const SHEET_NAME = 'Resultados';
 
 const SHEET_HEADERS = [
@@ -37,8 +39,12 @@ const SHEET_HEADERS = [
   'configSummary',
   'totalTrials',
   'percentCorrect',
-  'createdAtLocal'
+  'createdAtLocal',
+  'visualPerformanceEvaluationQuestion',
+  'visualPerformanceEvaluationScore'
 ];
+
+const VISUAL_PERFORMANCE_QUESTION = 'De 0 a 10, como avalias a tua performance visual neste dia?';
 
 function doGet() {
   try {
@@ -72,11 +78,12 @@ function doPost(e) {
 }
 
 function getSheet_() {
-  if (!SHEET_ID || SHEET_ID === 'PASTE_GOOGLE_SHEET_ID_HERE') {
-    throw new Error('Configura SHEET_ID no Google Apps Script.');
+  const sheetId = PropertiesService.getScriptProperties().getProperty(SHEET_ID_PROPERTY);
+  if (!sheetId) {
+    throw new Error('Configura a Script property SHEET_ID no Google Apps Script.');
   }
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  return ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+  const spreadsheet = SpreadsheetApp.openById(sheetId);
+  return spreadsheet.getSheetByName(SHEET_NAME) || spreadsheet.insertSheet(SHEET_NAME);
 }
 
 function ensureHeaderRow_(sheet) {
@@ -125,7 +132,11 @@ function normalizeRecord_(input) {
     configSummary: String(input.configSummary || '').slice(0, 1000),
     totalTrials: Number(input.totalTrials || 0),
     percentCorrect: Number(input.percentCorrect || 0),
-    createdAtLocal: input.createdAtLocal || input.dateTime || new Date().toISOString()
+    createdAtLocal: input.createdAtLocal || input.dateTime || new Date().toISOString(),
+    visualPerformanceEvaluationQuestion: String(input.visualPerformanceEvaluationQuestion || VISUAL_PERFORMANCE_QUESTION),
+    visualPerformanceEvaluationScore: input.visualPerformanceEvaluationScore == null
+      ? (input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating))
+      : Number(input.visualPerformanceEvaluationScore)
   };
 }
 
@@ -151,7 +162,9 @@ function rowFromRecord_(record) {
     record.configSummary,
     record.totalTrials,
     record.percentCorrect,
-    record.createdAtLocal
+    record.createdAtLocal,
+    record.visualPerformanceEvaluationQuestion,
+    record.visualPerformanceEvaluationScore
   ];
 }
 
@@ -160,7 +173,7 @@ function recordFromRow_(row) {
   SHEET_HEADERS.forEach(function(header, index) {
     obj[header] = row[index] == null ? '' : row[index];
   });
-  ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating'].forEach(function(key) {
+  ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating', 'visualPerformanceEvaluationScore'].forEach(function(key) {
     if (obj[key] !== '') obj[key] = Number(obj[key]);
   });
   try {

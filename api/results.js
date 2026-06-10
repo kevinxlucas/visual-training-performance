@@ -19,8 +19,12 @@ const SHEET_HEADERS = [
   'configSummary',
   'totalTrials',
   'percentCorrect',
-  'createdAtLocal'
+  'createdAtLocal',
+  'visualPerformanceEvaluationQuestion',
+  'visualPerformanceEvaluationScore'
 ];
+
+const VISUAL_PERFORMANCE_QUESTION = 'De 0 a 10, como avalias a tua performance visual neste dia?';
 
 function send(res, status, payload) {
   res.statusCode = status;
@@ -97,7 +101,7 @@ async function sheetsFetch(path, options = {}) {
 }
 
 async function ensureHeaderRow() {
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A1:U1`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A1:W1`);
   const current = await sheetsFetch(`/values/${range}`);
   const values = current.values || [];
   const activeHeaders = (values[0] || []).filter(Boolean);
@@ -114,7 +118,7 @@ function recordFromRow(row) {
   SHEET_HEADERS.forEach((header, index) => {
     obj[header] = row[index] ?? '';
   });
-  for (const key of ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating']) {
+  for (const key of ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating', 'visualPerformanceEvaluationScore']) {
     if (obj[key] !== '') obj[key] = Number(obj[key]);
   }
   try {
@@ -128,7 +132,7 @@ function recordFromRow(row) {
 
 async function getRecords() {
   await ensureHeaderRow();
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A2:U`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A2:W`);
   const data = await sheetsFetch(`/values/${range}?majorDimension=ROWS`);
   return (data.values || []).filter((row) => row[0]).map(recordFromRow);
 }
@@ -156,7 +160,11 @@ function normalizeRecord(input) {
     configSummary: String(input.configSummary || '').slice(0, 1000),
     totalTrials: Number(input.totalTrials || 0),
     percentCorrect: Number(input.percentCorrect || 0),
-    createdAtLocal: input.createdAtLocal || input.dateTime || new Date().toISOString()
+    createdAtLocal: input.createdAtLocal || input.dateTime || new Date().toISOString(),
+    visualPerformanceEvaluationQuestion: String(input.visualPerformanceEvaluationQuestion || VISUAL_PERFORMANCE_QUESTION),
+    visualPerformanceEvaluationScore: input.visualPerformanceEvaluationScore == null
+      ? (input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating))
+      : Number(input.visualPerformanceEvaluationScore)
   };
 }
 
@@ -182,7 +190,9 @@ function rowFromRecord(record) {
     record.configSummary,
     record.totalTrials,
     record.percentCorrect,
-    record.createdAtLocal
+    record.createdAtLocal,
+    record.visualPerformanceEvaluationQuestion,
+    record.visualPerformanceEvaluationScore
   ];
 }
 
@@ -193,7 +203,7 @@ async function appendRecord(input) {
   if (existing.some((row) => row.attemptId === record.attemptId)) {
     return { status: 'duplicate', record: { ...record, synced: true } };
   }
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A:U`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A:W`);
   await sheetsFetch(`/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
     method: 'POST',
     body: JSON.stringify({ values: [rowFromRecord(record)] })

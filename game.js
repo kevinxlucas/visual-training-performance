@@ -55,6 +55,7 @@ const CONFIGURED_API_URL = window.VisualTrainingConfig && typeof window.VisualTr
 const IS_LOCAL_HOST = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
 const API_URL = CONFIGURED_API_URL || (IS_LOCAL_HOST ? LOCAL_API_URL : '');
 const SESSION_NUMBER_KEY = 'visualTrainingSessionNumber';
+const VISUAL_PERFORMANCE_QUESTION = 'De 0 a 10, como avalias a tua performance visual neste dia?';
 let dbPromise = null;
 let historyRecords = [];
 let currentSavedRecord = null;
@@ -698,7 +699,10 @@ function buildAttemptRecord(rating, observations) {
     worstResponseTimeMs: worst,
     difficultySpeed: settings.difficultySpeed,
     settings,
+    // Mantém o campo histórico e acrescenta duas colunas finais explícitas para a folha.
     personalVisualPerformanceRating: rating,
+    visualPerformanceEvaluationQuestion: VISUAL_PERFORMANCE_QUESTION,
+    visualPerformanceEvaluationScore: rating,
     observations,
     configSummary: summarizeSettings(settings),
     totalTrials: attemptTotal,

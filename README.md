@@ -5,7 +5,7 @@ Aplicação p5.js para treino visual com persistência local, fila offline e sin
 ## O que foi alterado
 
 - Estado inicial: o jogo abre com formas geométricas visíveis e paradas. A tecla `M` continua a alternar o movimento sem alterar a lógica original de movimento.
-- Resultados: no fim de cada tentativa é obrigatória uma avaliação pessoal de 0 a 10 para análise local; esta autoavaliação não é enviada para Google Sheets. Podem ser adicionadas observações.
+- Resultados: no fim de cada tentativa é obrigatória uma avaliação pessoal de 0 a 10. Essa avaliação é guardada localmente e enviada para Google Sheets quando a sincronização está configurada. Podem ser adicionadas observações.
 - Persistência local: cada tentativa fica guardada em IndexedDB com `attemptId` único, mesmo sem internet.
 - Sincronização: a app tenta enviar resultados para a API configurada; se falhar, mantém a fila local e sincroniza quando voltar a ligação.
 - Google Sheets: em GitHub Pages a opção segura é Google Apps Script publicado como Web App. Não há credenciais no frontend.
@@ -25,17 +25,25 @@ https://kevinxlucas.github.io/visual-training-performance/
 
 Esta é a melhor autenticação para GitHub Pages porque o GitHub Pages não tem servidor privado. O Apps Script corre na conta Google autorizada e escreve na folha sem expor `client_secret`, `refresh_token`, passwords ou chaves no browser.
 
-1. Criar/abrir a folha **Visual Training Performance Database** no Google Drive.
+1. Criar/abrir a folha de resultados no Google Drive.
 2. Criar uma aba chamada **Resultados**.
 3. Abrir https://script.google.com/ e criar um projeto.
 4. Copiar o conteúdo de `google-apps-script/Code.gs` para `Code.gs`.
-5. No Apps Script, substituir:
+5. No Apps Script, configurar o ID da folha como propriedade privada do script:
+
+   - **Project Settings > Script properties > Add script property**
+   - Property: `SHEET_ID`
+   - Value: ID da folha de resultados
+
+O ID da folha não precisa ficar no código público.
+
+O código lê essa propriedade assim:
 
 ```js
-const SHEET_ID = 'PASTE_GOOGLE_SHEET_ID_HERE';
+PropertiesService.getScriptProperties().getProperty('SHEET_ID')
 ```
 
-pelo ID da folha.
+Não colocar credenciais, passwords, tokens ou client secrets no frontend.
 
 6. Fazer deploy:
    - **Deploy > New deployment**
@@ -79,5 +87,6 @@ O output estático fica em `dist/`.
 
 - Os dados ficam persistentes localmente via IndexedDB.
 - A app funciona sem internet e guarda resultados pendentes localmente.
-- Quando `config.js` contém o URL do Google Apps Script, os dados da tentativa são enviados para Google Sheets sem credenciais no frontend; a autoavaliação fica apenas localmente.
+- Quando `config.js` contém o URL do Google Apps Script, os dados da tentativa são enviados para Google Sheets sem credenciais no frontend; cada jogo/tentativa cria uma linha nova.
+- A avaliação final fica também nas duas colunas finais da folha: `visualPerformanceEvaluationQuestion` e `visualPerformanceEvaluationScore`.
 - O gráfico usa os dados guardados localmente e os dados sincronizados recebidos da Google Sheet quando a API está configurada.
