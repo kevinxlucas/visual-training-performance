@@ -703,6 +703,8 @@ function buildAttemptRecord(rating, observations) {
     personalVisualPerformanceRating: rating,
     visualPerformanceEvaluationQuestion: VISUAL_PERFORMANCE_QUESTION,
     visualPerformanceEvaluationScore: rating,
+    finalQuestionResponse: rating,
+    finalQuestionObservation: observations,
     observations,
     configSummary: summarizeSettings(settings),
     totalTrials: attemptTotal,
