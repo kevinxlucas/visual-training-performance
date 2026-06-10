@@ -15,13 +15,15 @@ const SHEET_HEADERS = [
   'difficultySpeed',
   'settingsJson',
   'personalVisualPerformanceRating',
+  'visualPerformanceEvaluationQuestion',
+  'visualPerformanceEvaluationScore',
+  'finalQuestionResponse',
+  'finalQuestionObservation',
   'observations',
   'configSummary',
   'totalTrials',
   'percentCorrect',
-  'createdAtLocal',
-  'visualPerformanceEvaluationQuestion',
-  'visualPerformanceEvaluationScore'
+  'createdAtLocal'
 ];
 
 const VISUAL_PERFORMANCE_QUESTION = 'De 0 a 10, como avalias a tua performance visual neste dia?';
@@ -74,7 +76,7 @@ async function getAccessToken() {
 }
 
 function sheetName() {
-  return process.env.GOOGLE_SHEET_NAME || 'Resultados';
+  return process.env.GOOGLE_SHEET_NAME || 'Resultados Finais';
 }
 
 function escapeSheetName(name) {
@@ -101,7 +103,7 @@ async function sheetsFetch(path, options = {}) {
 }
 
 async function ensureHeaderRow() {
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A1:W1`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A1:Y1`);
   const current = await sheetsFetch(`/values/${range}`);
   const values = current.values || [];
   const activeHeaders = (values[0] || []).filter(Boolean);
@@ -118,7 +120,7 @@ function recordFromRow(row) {
   SHEET_HEADERS.forEach((header, index) => {
     obj[header] = row[index] ?? '';
   });
-  for (const key of ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating', 'visualPerformanceEvaluationScore']) {
+  for (const key of ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating', 'visualPerformanceEvaluationScore', 'finalQuestionResponse']) {
     if (obj[key] !== '') obj[key] = Number(obj[key]);
   }
   try {
@@ -132,7 +134,7 @@ function recordFromRow(row) {
 
 async function getRecords() {
   await ensureHeaderRow();
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A2:W`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A2:Y`);
   const data = await sheetsFetch(`/values/${range}?majorDimension=ROWS`);
   return (data.values || []).filter((row) => row[0]).map(recordFromRow);
 }
@@ -156,15 +158,21 @@ function normalizeRecord(input) {
     difficultySpeed: input.difficultySpeed == null ? '' : String(input.difficultySpeed),
     settingsJson: JSON.stringify(input.settings || {}),
     personalVisualPerformanceRating: input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating),
-    observations: String(input.observations || '').slice(0, 1000),
-    configSummary: String(input.configSummary || '').slice(0, 1000),
-    totalTrials: Number(input.totalTrials || 0),
-    percentCorrect: Number(input.percentCorrect || 0),
-    createdAtLocal: input.createdAtLocal || input.dateTime || new Date().toISOString(),
     visualPerformanceEvaluationQuestion: String(input.visualPerformanceEvaluationQuestion || VISUAL_PERFORMANCE_QUESTION),
     visualPerformanceEvaluationScore: input.visualPerformanceEvaluationScore == null
       ? (input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating))
-      : Number(input.visualPerformanceEvaluationScore)
+      : Number(input.visualPerformanceEvaluationScore),
+    finalQuestionResponse: input.finalQuestionResponse == null
+      ? (input.visualPerformanceEvaluationScore == null
+        ? (input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating))
+        : Number(input.visualPerformanceEvaluationScore))
+      : Number(input.finalQuestionResponse),
+    finalQuestionObservation: String(input.finalQuestionObservation || input.observations || '').slice(0, 1000),
+    observations: String(input.observations || input.finalQuestionObservation || '').slice(0, 1000),
+    configSummary: String(input.configSummary || '').slice(0, 1000),
+    totalTrials: Number(input.totalTrials || 0),
+    percentCorrect: Number(input.percentCorrect || 0),
+    createdAtLocal: input.createdAtLocal || input.dateTime || new Date().toISOString()
   };
 }
 
@@ -186,13 +194,15 @@ function rowFromRecord(record) {
     record.difficultySpeed,
     record.settingsJson,
     record.personalVisualPerformanceRating,
+    record.visualPerformanceEvaluationQuestion,
+    record.visualPerformanceEvaluationScore,
+    record.finalQuestionResponse,
+    record.finalQuestionObservation,
     record.observations,
     record.configSummary,
     record.totalTrials,
     record.percentCorrect,
-    record.createdAtLocal,
-    record.visualPerformanceEvaluationQuestion,
-    record.visualPerformanceEvaluationScore
+    record.createdAtLocal
   ];
 }
 
@@ -203,7 +213,7 @@ async function appendRecord(input) {
   if (existing.some((row) => row.attemptId === record.attemptId)) {
     return { status: 'duplicate', record: { ...record, synced: true } };
   }
-  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A:W`);
+  const range = encodeURIComponent(`'${escapeSheetName(sheetName())}'!A:Y`);
   await sheetsFetch(`/values/${range}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
     method: 'POST',
     body: JSON.stringify({ values: [rowFromRecord(record)] })

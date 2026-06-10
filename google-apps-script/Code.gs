@@ -16,7 +16,7 @@
  */
 
 const SHEET_ID_PROPERTY = 'SHEET_ID';
-const SHEET_NAME = 'Resultados';
+const SHEET_NAME = 'Resultados Finais';
 
 const SHEET_HEADERS = [
   'attemptId',
@@ -35,13 +35,15 @@ const SHEET_HEADERS = [
   'difficultySpeed',
   'settingsJson',
   'personalVisualPerformanceRating',
+  'visualPerformanceEvaluationQuestion',
+  'visualPerformanceEvaluationScore',
+  'finalQuestionResponse',
+  'finalQuestionObservation',
   'observations',
   'configSummary',
   'totalTrials',
   'percentCorrect',
-  'createdAtLocal',
-  'visualPerformanceEvaluationQuestion',
-  'visualPerformanceEvaluationScore'
+  'createdAtLocal'
 ];
 
 const VISUAL_PERFORMANCE_QUESTION = 'De 0 a 10, como avalias a tua performance visual neste dia?';
@@ -128,15 +130,21 @@ function normalizeRecord_(input) {
     difficultySpeed: input.difficultySpeed == null ? '' : String(input.difficultySpeed),
     settingsJson: JSON.stringify(input.settings || {}),
     personalVisualPerformanceRating: input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating),
-    observations: String(input.observations || '').slice(0, 1000),
-    configSummary: String(input.configSummary || '').slice(0, 1000),
-    totalTrials: Number(input.totalTrials || 0),
-    percentCorrect: Number(input.percentCorrect || 0),
-    createdAtLocal: input.createdAtLocal || input.dateTime || new Date().toISOString(),
     visualPerformanceEvaluationQuestion: String(input.visualPerformanceEvaluationQuestion || VISUAL_PERFORMANCE_QUESTION),
     visualPerformanceEvaluationScore: input.visualPerformanceEvaluationScore == null
       ? (input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating))
-      : Number(input.visualPerformanceEvaluationScore)
+      : Number(input.visualPerformanceEvaluationScore),
+    finalQuestionResponse: input.finalQuestionResponse == null
+      ? (input.visualPerformanceEvaluationScore == null
+        ? (input.personalVisualPerformanceRating == null ? '' : Number(input.personalVisualPerformanceRating))
+        : Number(input.visualPerformanceEvaluationScore))
+      : Number(input.finalQuestionResponse),
+    finalQuestionObservation: String(input.finalQuestionObservation || input.observations || '').slice(0, 1000),
+    observations: String(input.observations || input.finalQuestionObservation || '').slice(0, 1000),
+    configSummary: String(input.configSummary || '').slice(0, 1000),
+    totalTrials: Number(input.totalTrials || 0),
+    percentCorrect: Number(input.percentCorrect || 0),
+    createdAtLocal: input.createdAtLocal || input.dateTime || new Date().toISOString()
   };
 }
 
@@ -158,13 +166,15 @@ function rowFromRecord_(record) {
     record.difficultySpeed,
     record.settingsJson,
     record.personalVisualPerformanceRating,
+    record.visualPerformanceEvaluationQuestion,
+    record.visualPerformanceEvaluationScore,
+    record.finalQuestionResponse,
+    record.finalQuestionObservation,
     record.observations,
     record.configSummary,
     record.totalTrials,
     record.percentCorrect,
-    record.createdAtLocal,
-    record.visualPerformanceEvaluationQuestion,
-    record.visualPerformanceEvaluationScore
+    record.createdAtLocal
   ];
 }
 
@@ -173,7 +183,7 @@ function recordFromRow_(row) {
   SHEET_HEADERS.forEach(function(header, index) {
     obj[header] = row[index] == null ? '' : row[index];
   });
-  ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating', 'visualPerformanceEvaluationScore'].forEach(function(key) {
+  ['sessionNumber', 'attemptNumber', 'levelReached', 'totalAttemptTimeMs', 'finalScore', 'hits', 'errors', 'averageResponseTimeMs', 'bestResponseTimeMs', 'worstResponseTimeMs', 'totalTrials', 'percentCorrect', 'personalVisualPerformanceRating', 'visualPerformanceEvaluationScore', 'finalQuestionResponse'].forEach(function(key) {
     if (obj[key] !== '') obj[key] = Number(obj[key]);
   });
   try {

@@ -8,7 +8,7 @@ Aplicação p5.js para treino visual com persistência local, fila offline e sin
 - Resultados: no fim de cada tentativa é obrigatória uma avaliação pessoal de 0 a 10. Essa avaliação é guardada localmente e enviada para Google Sheets quando a sincronização está configurada. Podem ser adicionadas observações.
 - Persistência local: cada tentativa fica guardada em IndexedDB com `attemptId` único, mesmo sem internet.
 - Sincronização: a app tenta enviar resultados para a API configurada; se falhar, mantém a fila local e sincroniza quando voltar a ligação.
-- Google Sheets: em GitHub Pages a opção segura é Google Apps Script publicado como Web App. Não há credenciais no frontend.
+- Google Sheets: os resultados finais são gravados na aba **Resultados Finais**. Em GitHub Pages a opção segura é Google Apps Script publicado como Web App. Não há credenciais no frontend.
 - Análise: painel com resultado atual, últimas tentativas, médias, melhor nível, evolução recente, estado de sincronização e gráfico.
 - PWA: favicon, manifest e service worker para abrir em browser e suportar cache local.
 - Publicação: preparada para GitHub Pages com caminhos relativos e build estático em `dist/`.
@@ -26,7 +26,7 @@ https://kevinxlucas.github.io/visual-training-performance/
 Esta é a melhor autenticação para GitHub Pages porque o GitHub Pages não tem servidor privado. O Apps Script corre na conta Google autorizada e escreve na folha sem expor `client_secret`, `refresh_token`, passwords ou chaves no browser.
 
 1. Criar/abrir a folha de resultados no Google Drive.
-2. Criar uma aba chamada **Resultados**.
+2. Criar/confirmar uma aba chamada **Resultados Finais**.
 3. Abrir https://script.google.com/ e criar um projeto.
 4. Copiar o conteúdo de `google-apps-script/Code.gs` para `Code.gs`.
 5. No Apps Script, configurar o ID da folha como propriedade privada do script:
@@ -88,5 +88,5 @@ O output estático fica em `dist/`.
 - Os dados ficam persistentes localmente via IndexedDB.
 - A app funciona sem internet e guarda resultados pendentes localmente.
 - Quando `config.js` contém o URL do Google Apps Script, os dados da tentativa são enviados para Google Sheets sem credenciais no frontend; cada jogo/tentativa cria uma linha nova.
-- A avaliação final fica também nas duas colunas finais da folha: `visualPerformanceEvaluationQuestion` e `visualPerformanceEvaluationScore`.
+- A avaliação final fica na folha com campos explícitos: `visualPerformanceEvaluationQuestion`, `visualPerformanceEvaluationScore`, `finalQuestionResponse` e `finalQuestionObservation`.
 - O gráfico usa os dados guardados localmente e os dados sincronizados recebidos da Google Sheet quando a API está configurada.
